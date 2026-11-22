@@ -80,6 +80,15 @@ public class RouteEngineTest {
         check(c, "256-555-0100", CELL, null);
         check(c, "+17035550199", HAMSHACK, "97035550199");
 
+        // Force prefixes
+        check(c, "**7035551234", GOOGLE_VOICE, "+17035551234");
+        check(c, "**+44 20 7946 0000", GOOGLE_VOICE, "+442079460000");
+        check(c, "*0 256-555-1234", CELL, "2565551234");
+        check(c, "*12565551234", HAMSHACK, "92565551234");
+        check(c, "*67 256 555 1234", PASSTHROUGH, null);   // caller-ID block stays a carrier code
+        check(c, "**21*5551234#", PASSTHROUGH, null);     // GSM call-forwarding code untouched
+        check(c, "*0611", PASSTHROUGH, null);             // too short to force
+
         // International
         check(c, "+44 20 7946 0000", CELL, null);
         check(c, "011442079460000", CELL, null);

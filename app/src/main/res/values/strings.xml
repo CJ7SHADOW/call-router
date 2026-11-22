@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="call_with">Call with…</string>
+    <string name="call_with_long">Call a contact with a chosen line</string>
+</resources>

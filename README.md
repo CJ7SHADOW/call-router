@@ -18,6 +18,7 @@ Every push to `main` builds an APK through GitHub Actions. Download the newest `
 
 | # | Rule | Result |
 |---|------|--------|
+| 0 | Force prefix `**` / `*0` / `*1` + number | Google Voice / Cell / Hamshack |
 | 1 | Contains `*` or `#`, or is N11 (211–911) or 988 | Untouched |
 | 2 | Matches a Groundwire dial pattern (FreePBX syntax, matched exactly as dialed; `05+NXX` style adds a prefix) | Groundwire |
 | 2b | Any other number of 3 digits or fewer | Untouched |
@@ -29,6 +30,12 @@ Every push to `main` builds an APK through GitHub Actions. Download the newest `
 | 8 | Everything else | Default line (Cell) |
 
 Default Groundwire patterns: `05.` AmateurWire, `05+NXX` / `05+[1-5]XXX` / `05+6711` bare AmateurWire extensions (05 added), `09.` Mom & Dad's line, `9NXXNXXXXXX` BulkVS, plus the Hams Over IP patterns from the home PBX outbound route.
+
+## One-call overrides
+
+- **Force prefix in the dialer:** `**` + number → Google Voice, `*0` + number → Cell, `*1` + number → Hamshack (BulkVS). The prefix is removed before the call goes out. Carrier codes like `*67` aren't affected.
+- **Call with…:** long-press the Call Router icon → *Call with…* → pick a contact → pick a line. Sharing a contact to Call Router, or choosing Call Router for a `tel:` link, opens the same picker.
+- **Quick Settings tile "Call routing":** tap to switch routing off (every call on cell) or back on.
 
 ## Google Voice hand-off
 

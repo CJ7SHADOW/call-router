@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
  * Pure-Java routing rules (no Android imports) so it can be unit tested anywhere.
  *
  * Order of evaluation:
+ *   0. Force prefixes (** Google Voice, *0 Cell, *1 Hamshack) + number -> that line, prefix removed
  *   1. Service codes (* or #), letters, N11 and 988 -> pass through untouched
  *   2. Groundwire dial patterns (FreePBX syntax, matched against the raw digits, optional
  *      "prepend+pattern" adds digits in front) -> Groundwire
@@ -41,6 +42,10 @@ public final class RouteEngine {
         public Line internationalLine = Line.CELL;
         /** Prefix the home PBX uses to send a call out the BulkVS hamshack line. */
         public String hamshackPrefix = "9";
+        /** Dial these in front of a number to force a line for that one call. */
+        public String forceGoogleVoice = "**";
+        public String forceCell = "*0";
+        public String forceHamshack = "*1";
 
         public Config groundwire(String patternsText) {
             groundwirePatterns.clear();
@@ -118,6 +123,9 @@ public final class RouteEngine {
         if (raw == null) raw = "";
         String s = raw.trim();
 
+        Decision forced = forced(s, c);
+        if (forced != null) return forced;
+
         // Service codes, vanity letters, anything odd: leave it alone.
         if (s.indexOf('*') >= 0 || s.indexOf('#') >= 0 || s.indexOf(',') >= 0 || s.indexOf(';') >= 0) {
             return new Decision(Line.PASSTHROUGH, s, "service code");
@@ -171,6 +179,56 @@ public final class RouteEngine {
         if (c.gvAreaCodes.contains(npa)) return forLine(c, Line.GOOGLE_VOICE, s, ten, "area code " + npa);
         if (c.cellAreaCodes.contains(npa)) return forLine(c, Line.CELL, s, ten, "area code " + npa);
         return forLine(c, c.defaultLine, s, ten, "default");
+    }
+
+    /** Handles "**2565551234" style one-call overrides. Returns null if no force prefix applies. */
+    static Decision forced(String s, Config c) {
+        String compact = s.replaceAll("[\\s\\-().]", "");
+        String[][] table = {
+                {c.forceGoogleVoice, Line.GOOGLE_VOICE.name()},
+                {c.forceCell, Line.CELL.name()},
+                {c.forceHamshack, Line.HAMSHACK.name()}};
+        // longest prefix first so "**" isn't shadowed by a shorter one
+        java.util.Arrays.sort(table, (a, b) -> b[0].length() - a[0].length());
+        for (String[] t : table) {
+            String pre = t[0];
+            if (pre == null || pre.isEmpty() || !compact.startsWith(pre)) continue;
+            String rest = compact.substring(pre.length());
+            if (!rest.matches("\\+?[0-9]{7,}")) return null;
+            return force(Line.valueOf(t[1]), rest, c, "forced with " + pre);
+        }
+        return null;
+    }
+
+    /** Build a decision for an explicitly chosen line (used by force prefixes and "Call with…"). */
+    public static Decision force(Line line, String number, Config c, String why) {
+        String n = number.replaceAll("[^0-9+]", "");
+        String ten = toTen(n);
+        switch (line) {
+            case GOOGLE_VOICE:
+                if (ten != null) return new Decision(Line.GOOGLE_VOICE, "+1" + ten, why);
+                if (n.startsWith("+")) return new Decision(Line.GOOGLE_VOICE, n, why);
+                if (n.startsWith("011")) return new Decision(Line.GOOGLE_VOICE, "+" + n.substring(3), why);
+                return new Decision(Line.GOOGLE_VOICE, n, why);
+            case HAMSHACK:
+                if (ten == null) return new Decision(Line.PASSTHROUGH, number, "hamshack needs a 10-digit US number");
+                return new Decision(Line.HAMSHACK, c.hamshackPrefix + ten, why);
+            case GROUNDWIRE:
+                return new Decision(Line.GROUNDWIRE, n.replace("+", ""), why);
+            case CELL:
+                return new Decision(Line.CELL, ten != null ? ten : n, why);
+            default:
+                return new Decision(Line.PASSTHROUGH, number, why);
+        }
+    }
+
+    static String toTen(String n) {
+        String d = n.replace("+", "");
+        boolean plus = n.startsWith("+");
+        if (d.length() == 11 && d.startsWith("1")) d = d.substring(1);
+        else if (plus || d.length() != 10) return null;
+        if (d.charAt(0) < '2' || d.charAt(3) < '2') return null;
+        return d;
     }
 
     private static Decision international(Config c, String raw, String why) {

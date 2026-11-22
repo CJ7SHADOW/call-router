@@ -46,6 +46,7 @@ public class MainActivity extends Activity {
     private EditText patternsEdit, gvEdit, cellEdit, hamEdit, testEdit;
     private RadioGroup defaultGroup;
     private LinearLayout overridesList;
+    private Switch enabled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +84,7 @@ public class MainActivity extends Activity {
 
         // ---- Switches
         header("Routing");
-        Switch enabled = new Switch(this);
+        enabled = new Switch(this);
         enabled.setText("Routing on");
         enabled.setChecked(prefs.enabled());
         enabled.setOnCheckedChangeListener((CompoundButton b, boolean c) -> prefs.setEnabled(c));
@@ -99,6 +100,10 @@ public class MainActivity extends Activity {
         showGw.setChecked(prefs.showGroundwire());
         showGw.setOnCheckedChangeListener((CompoundButton b, boolean c) -> prefs.setShowGroundwire(c));
         root.addView(showGw);
+
+        note("One-call overrides: dial ** + number for Google Voice, *0 + number for Cell, *1 + number for the Hamshack line. "
+                + "Long-press the Call Router icon → Call with… to pick a contact and a line. "
+                + "Add the \"Call routing\" Quick Settings tile to switch routing on/off.");
 
         // ---- Tester
         header("Test a number");
@@ -157,6 +162,7 @@ public class MainActivity extends Activity {
         super.onResume();
         refreshStatus();
         refreshOverrides();
+        enabled.setChecked(prefs.enabled()); // the Quick Settings tile may have changed it
     }
 
     // ------------------------------------------------------------------ status

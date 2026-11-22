@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@android:drawable/sym_action_call"
+        android:shortcutId="call_with"
+        android:shortcutLongLabel="@string/call_with_long"
+        android:shortcutShortLabel="@string/call_with">
+        <intent
+            android:action="com.kg4bhr.callrouter.CALL_WITH"
+            android:targetClass="com.kg4bhr.callrouter.CallWithActivity"
+            android:targetPackage="com.kg4bhr.callrouter" />
+    </shortcut>
+</shortcuts>

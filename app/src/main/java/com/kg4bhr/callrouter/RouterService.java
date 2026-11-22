@@ -17,7 +17,7 @@ public class RouterService extends CallRedirectionService {
     public void onPlaceCall(Uri handle, PhoneAccountHandle initialPhoneAccount, boolean allowInteractiveResponse) {
         Action a;
         try {
-            a = decide(handle);
+            a = decide(handle, initialPhoneAccount);
         } catch (RuntimeException e) {
             Log.e(TAG, "routing failed, placing unchanged", e);
             a = Action.UNCHANGED;
@@ -28,19 +28,22 @@ public class RouterService extends CallRedirectionService {
     private enum Kind { UNCHANGED, REDIRECT, CANCEL }
 
     private static final class Action {
-        static final Action UNCHANGED = new Action(Kind.UNCHANGED, null, null, null);
+        static final Action UNCHANGED = new Action(Kind.UNCHANGED, null, null, null, false);
         final Kind kind; final Uri uri; final PhoneAccountHandle account; final String gvNumber;
-        Action(Kind k, Uri u, PhoneAccountHandle acct, String gv) { kind = k; uri = u; account = acct; gvNumber = gv; }
+        final boolean toGroundwire;
+        Action(Kind k, Uri u, PhoneAccountHandle acct, String gv, boolean gw) {
+            kind = k; uri = u; account = acct; gvNumber = gv; toGroundwire = gw;
+        }
     }
 
-    private Action decide(Uri handle) {
+    private Action decide(Uri handle, PhoneAccountHandle initial) {
         Prefs p = new Prefs(this);
         if (!p.enabled() || handle == null || !"tel".equals(handle.getScheme())) return Action.UNCHANGED;
 
-        // Google Voice may place its own call right after we hand off; don't route that one again.
+        // A call we (or Google Voice right after a hand-off) just placed on purpose: don't route it again.
         if (p.inHandoffWindow()) {
             p.clearHandoff();
-            Log.i(TAG, "GV hand-off window: passing " + handle + " through");
+            Log.i(TAG, "bypass window: passing " + handle + " through");
             return Action.UNCHANGED;
         }
 
@@ -60,9 +63,9 @@ public class RouterService extends CallRedirectionService {
                 if (gw == null) {
                     Notifier.error(this, "Call to " + dialed + " cancelled",
                             "It should go through Groundwire, but no Groundwire calling account is selected. Open Call Router to pick it.");
-                    return new Action(Kind.CANCEL, null, null, null);
+                    return new Action(Kind.CANCEL, null, null, null, false);
                 }
-                return new Action(Kind.REDIRECT, Uri.fromParts("tel", d.dial, null), gw, null);
+                return new Action(Kind.REDIRECT, Uri.fromParts("tel", d.dial, null), gw, null, true);
             }
             case GOOGLE_VOICE:
                 if (GoogleVoice.intent(this, d.dial) == null) {
@@ -70,31 +73,28 @@ public class RouterService extends CallRedirectionService {
                             "Called " + dialed + " on your cell instead. Google Voice isn't installed or won't accept call links.");
                     return Action.UNCHANGED;
                 }
-                return new Action(Kind.CANCEL, null, null, d.dial);
+                return new Action(Kind.CANCEL, null, null, d.dial, false);
+            case CELL: {
+                // Normally untouched; a force prefix (*0) means the number was rewritten.
+                if (d.dial.equals(dialed.trim())) return Action.UNCHANGED;
+                PhoneAccountHandle sim = Lines.cellAccount(this, initial);
+                if (sim == null) {
+                    Notifier.error(this, "Call to " + dialed + " cancelled", "Couldn't find the T-Mobile calling account.");
+                    return new Action(Kind.CANCEL, null, null, null, false);
+                }
+                return new Action(Kind.REDIRECT, Uri.fromParts("tel", d.dial, null), sim, null, false);
+            }
             default:
                 return Action.UNCHANGED;
         }
-    }
-
-    /** Give the call a moment to start, then open the app that is carrying it (needs "Display over other apps"). */
-    private void bringToFront(String pkg) {
-        final android.content.Context app = getApplicationContext();
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-            if (!android.provider.Settings.canDrawOverlays(app)) return;
-            android.content.Intent i = app.getPackageManager().getLaunchIntentForPackage(pkg);
-            if (i == null) return;
-            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-                    | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            try { app.startActivity(i); } catch (RuntimeException e) { Log.w(TAG, "couldn't open " + pkg, e); }
-        }, 1200);
     }
 
     private void respond(Action a) {
         switch (a.kind) {
             case REDIRECT:
                 redirectCall(a.uri, a.account, false);
-                if (new Prefs(this).showGroundwire()) {
-                    bringToFront(a.account.getComponentName().getPackageName());
+                if (a.toGroundwire && new Prefs(this).showGroundwire()) {
+                    Lines.bringToFront(this, a.account.getComponentName().getPackageName());
                 }
                 break;
             case CANCEL:
