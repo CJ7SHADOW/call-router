@@ -32,6 +32,10 @@ public final class Prefs {
     public boolean showGroundwire() { return sp.getBoolean("showGw", true); }
     public void setShowGroundwire(boolean v) { sp.edit().putBoolean("showGw", v).apply(); }
 
+    /** Experimental: Google account email passed to Google Voice so it doesn't ask which account. */
+    public String gvAccount() { return sp.getString("gvAccount", ""); }
+    public void setGvAccount(String v) { sp.edit().putString("gvAccount", v.trim()).apply(); }
+
     public String groundwirePatterns() { return sp.getString("gwPatterns", Defaults.GROUNDWIRE_PATTERNS); }
     public String gvAreaCodes() { return sp.getString("gvAreas", Defaults.GV_AREA_CODES); }
     public String cellAreaCodes() { return sp.getString("cellAreas", Defaults.CELL_AREA_CODES); }

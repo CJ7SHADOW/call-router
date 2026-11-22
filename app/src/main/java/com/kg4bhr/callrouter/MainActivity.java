@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
     private LinearLayout root;
     private TextView roleStatus, overlayStatus, permStatus, gwStatus, gvStatus, testResult;
     private Button roleBtn, overlayBtn, permBtn;
-    private EditText patternsEdit, gvEdit, cellEdit, hamEdit, testEdit;
+    private EditText patternsEdit, gvEdit, cellEdit, hamEdit, testEdit, gvAccountEdit;
     private RadioGroup defaultGroup;
     private LinearLayout overridesList;
     private Switch enabled;
@@ -122,6 +122,12 @@ public class MainActivity extends Activity {
         patternsEdit = edit("", true);
         patternsEdit.setText(prefs.groundwirePatterns());
         patternsEdit.setTypeface(Typeface.MONOSPACE);
+
+        header("Google Voice account (experimental)");
+        note("If Google Voice asks which account every call, enter your Voice account's email. Leave empty to turn this off. Saved with Save rules.");
+        gvAccountEdit = edit("you@gmail.com", false);
+        gvAccountEdit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        gvAccountEdit.setText(prefs.gvAccount());
 
         header("Area codes");
         note("Google Voice area codes:");
@@ -325,6 +331,7 @@ public class MainActivity extends Activity {
                     .setMessage(String.join("\n", errs)).setPositiveButton("OK", null).show();
             return;
         }
+        prefs.setGvAccount(gvAccountEdit.getText().toString());
         prefs.saveRules(pats, gvEdit.getText().toString(), cellEdit.getText().toString(),
                 hamEdit.getText().toString().trim(), selectedDefault());
         toast("Rules saved");

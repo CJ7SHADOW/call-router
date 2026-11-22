@@ -26,9 +26,27 @@ public final class GoogleVoice {
         Uri uri = Uri.fromParts("tel", number, null);
         for (String action : new String[]{Intent.ACTION_CALL, Intent.ACTION_DIAL, Intent.ACTION_VIEW}) {
             Intent i = new Intent(action, uri).setPackage(PKG).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (i.resolveActivity(ctx.getPackageManager()) != null) return i;
+            if (i.resolveActivity(ctx.getPackageManager()) != null) {
+                addAccount(i, new Prefs(ctx).gvAccount());
+                return i;
+            }
         }
         return null;
+    }
+
+    /**
+     * Experimental: Google Voice has no documented "use this account" extra, so pass the account
+     * under the names Google apps commonly read. Unknown extras are simply ignored.
+     */
+    static void addAccount(Intent i, String email) {
+        if (email == null || email.isEmpty()) return;
+        i.putExtra("authAccount", email);          // AccountManager.KEY_ACCOUNT_NAME
+        i.putExtra("accountName", email);
+        i.putExtra("account_name", email);
+        i.putExtra("account", email);
+        i.putExtra("com.google.android.apps.googlevoice.ACCOUNT_NAME", email);
+        i.putExtra("selected_account", new android.accounts.Account(email, "com.google"));
+        i.putExtra("android.accounts.Account", new android.accounts.Account(email, "com.google"));
     }
 
     public static String describe(Context ctx) {
