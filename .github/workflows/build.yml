@@ -27,8 +27,6 @@ jobs:
                           tools/RouteEngineTest.java
           java -cp /tmp/t com.kg4bhr.callrouter.RouteEngineTest
 
-      - uses: android-actions/setup-android@v3
-
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
