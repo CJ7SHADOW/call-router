@@ -9,9 +9,11 @@ public final class Defaults {
             "# AmateurWire (05 + extension)\n" +
             "05.\n" +
             "# AmateurWire extensions dialed bare: 05 added automatically\n" +
-            "# (3-digit Poseidon, 5xxx Triton; 911/611/988 are always protected)\n" +
+            "# 3-digit services, Poseidon 1000-4999 + 6711, Triton 5xxx\n" +
+            "# (911, other N11 codes and 988 are always protected)\n" +
             "05+NXX\n" +
-            "05+5XXX\n" +
+            "05+[1-5]XXX\n" +
+            "05+6711\n" +
             "# Mom & Dad's line (09 + number)\n" +
             "09.\n" +
             "# BulkVS hamshack line (9 + 10 digits)\n" +
@@ -19,7 +21,6 @@ public final class Defaults {
             "# Hams Over IP (no prefix)\n" +
             "[124]0XXXX\n" +
             "100XX\n" +
-            "11ZZ\n" +
             "15XXX\n" +
             "200XX\n" +
             "25XXX\n" +

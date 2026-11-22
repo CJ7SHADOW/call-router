@@ -40,6 +40,12 @@ public class RouteEngineTest {
         check(c, "947", GROUNDWIRE, "05947");
         check(c, "456", GROUNDWIRE, "05456");
         check(c, "5001", GROUNDWIRE, "055001");
+        check(c, "1000", GROUNDWIRE, "051000");
+        check(c, "1123", GROUNDWIRE, "051123");  // was HoIP 11ZZ, now AmateurWire
+        check(c, "4999", GROUNDWIRE, "054999");
+        check(c, "6711", GROUNDWIRE, "056711");
+        check(c, "6712", PASSTHROUGH, null);
+        check(c, "7000", PASSTHROUGH, null);
         check(c, "611", PASSTHROUGH, "611");
         check(c, "411", PASSTHROUGH, null);
         check(c, "123", PASSTHROUGH, null);   // NXX can't start with 1
@@ -50,8 +56,6 @@ public class RouteEngineTest {
         check(c, "10012", GROUNDWIRE, null);
         check(c, "20012", GROUNDWIRE, null);
         check(c, "409999", GROUNDWIRE, null);
-        check(c, "1123", GROUNDWIRE, null);
-        check(c, "1103", PASSTHROUGH, null);   // 11ZZ: Z can't be 0
         check(c, "15999", GROUNDWIRE, null);
         check(c, "25000", GROUNDWIRE, null);
         check(c, "35012", GROUNDWIRE, null);

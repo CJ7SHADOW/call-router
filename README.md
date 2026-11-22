@@ -28,7 +28,7 @@ Every push to `main` builds an APK through GitHub Actions. Download the newest `
 | 7 | Cell area codes (default: Virginia) | Cell |
 | 8 | Everything else | Default line (Cell) |
 
-Default Groundwire patterns: `05.` AmateurWire, `05+NXX` / `05+5XXX` bare AmateurWire extensions (05 added), `09.` Mom & Dad's line, `9NXXNXXXXXX` BulkVS, plus the Hams Over IP patterns from the home PBX outbound route.
+Default Groundwire patterns: `05.` AmateurWire, `05+NXX` / `05+[1-5]XXX` / `05+6711` bare AmateurWire extensions (05 added), `09.` Mom & Dad's line, `9NXXNXXXXXX` BulkVS, plus the Hams Over IP patterns from the home PBX outbound route.
 
 ## Google Voice hand-off
 
