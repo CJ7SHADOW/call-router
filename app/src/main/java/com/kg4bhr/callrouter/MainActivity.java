@@ -187,7 +187,7 @@ public class MainActivity extends Activity {
 
     private List<String> missingPerms() {
         List<String> out = new ArrayList<>();
-        for (String p : new String[]{Manifest.permission.READ_PHONE_STATE, Manifest.permission.CALL_PHONE,
+        for (String p : new String[]{Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS, Manifest.permission.CALL_PHONE,
                 Manifest.permission.POST_NOTIFICATIONS}) {
             if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) out.add(p);
         }
@@ -215,16 +215,28 @@ public class MainActivity extends Activity {
         List<Acct> out = new ArrayList<>();
         if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) return out;
         TelecomManager tm = getSystemService(TelecomManager.class);
+        lastScan.setLength(0);
         try {
-            for (PhoneAccountHandle h : tm.getCallCapablePhoneAccounts()) {
-                PhoneAccount a = tm.getPhoneAccount(h);
-                if (a == null || a.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) continue;
-                String label = a.getLabel() == null ? h.getComponentName().getPackageName() : a.getLabel().toString();
-                out.add(new Acct(h, label + "  (" + h.getComponentName().getPackageName() + ")"));
+            List<PhoneAccountHandle> handles = tm.getCallCapablePhoneAccounts();
+            lastScan.append(handles.size()).append(" calling account(s): ");
+            for (PhoneAccountHandle h : handles) {
+                String pkg = h.getComponentName().getPackageName();
+                lastScan.append(pkg).append(' ');
+                PhoneAccount a = null;
+                try { a = tm.getPhoneAccount(h); } catch (RuntimeException ignored) { }
+                // Android may hide another app's account details from us, so a null here is not a reason to skip it.
+                if (a != null && a.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) continue;
+                if (a == null && (pkg.equals("com.android.phone") || pkg.startsWith("com.android.services.telephony"))) continue;
+                String label = (a == null || a.getLabel() == null) ? pkg : a.getLabel().toString();
+                out.add(new Acct(h, label + "  (" + pkg + ")"));
             }
-        } catch (SecurityException ignored) { }
+        } catch (SecurityException e) {
+            lastScan.append("permission denied: ").append(e.getMessage());
+        }
         return out;
     }
+
+    private final StringBuilder lastScan = new StringBuilder();
 
     private void autoPickGroundwire() {
         for (Acct a : thirdPartyAccounts()) {
@@ -239,7 +251,9 @@ public class MainActivity extends Activity {
     private void chooseGroundwire() {
         List<Acct> accts = thirdPartyAccounts();
         if (accts.isEmpty()) {
-            toast("No app calling accounts found. Grant phone permission, and turn on \"Enable placing calls through native dialer\" in Groundwire.");
+            new AlertDialog.Builder(this).setTitle("No Groundwire account found")
+                    .setMessage("Android reported " + lastScan + "\n\nCheck Phone settings → Calling accounts → All calling accounts and make sure Groundwire is switched on, then try again.")
+                    .setPositiveButton("OK", null).show();
             return;
         }
         String[] labels = new String[accts.size()];
