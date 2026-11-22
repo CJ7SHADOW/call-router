@@ -35,6 +35,15 @@ public class RouteEngineTest {
         check(c, "92565551234", GROUNDWIRE, "92565551234");
         check(c, "9 (703) 555-1234", GROUNDWIRE, "97035551234");
 
+        // Bare AmateurWire extensions get 05
+        check(c, "203", GROUNDWIRE, "05203");
+        check(c, "947", GROUNDWIRE, "05947");
+        check(c, "456", GROUNDWIRE, "05456");
+        check(c, "5001", GROUNDWIRE, "055001");
+        check(c, "611", PASSTHROUGH, "611");
+        check(c, "411", PASSTHROUGH, null);
+        check(c, "123", PASSTHROUGH, null);   // NXX can't start with 1
+
         // Hams Over IP
         check(c, "101234", GROUNDWIRE, null);
         check(c, "10123", PASSTHROUGH, null);  // 5 digits: not 100XX, not [124]0XXXX

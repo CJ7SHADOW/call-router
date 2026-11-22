@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
 
         // ---- Rules
         header("Groundwire dial patterns");
-        note("FreePBX syntax, one per line. X=0-9, Z=1-9, N=2-9, [..]=set, .=one or more. Lines starting with # are comments. Matched against exactly what you dial; the call goes to Groundwire unchanged.");
+        note("FreePBX syntax, one per line. X=0-9, Z=1-9, N=2-9, [..]=set, .=one or more. Lines starting with # are comments. Matched against exactly what you dial. Put digits and + in front to have them added, e.g. 05+NXX turns 203 into 05203. 911/N11 and 988 are never touched.");
         patternsEdit = edit("", true);
         patternsEdit.setText(prefs.groundwirePatterns());
         patternsEdit.setTypeface(Typeface.MONOSPACE);

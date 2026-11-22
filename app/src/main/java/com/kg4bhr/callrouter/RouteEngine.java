@@ -14,8 +14,10 @@ import java.util.regex.Pattern;
  * Pure-Java routing rules (no Android imports) so it can be unit tested anywhere.
  *
  * Order of evaluation:
- *   1. Service codes (* or #), letters, 3 digits or fewer (911, 611, 988...) -> pass through untouched
- *   2. Groundwire dial patterns (FreePBX syntax, matched against the raw digits) -> Groundwire
+ *   1. Service codes (* or #), letters, N11 and 988 -> pass through untouched
+ *   2. Groundwire dial patterns (FreePBX syntax, matched against the raw digits, optional
+ *      "prepend+pattern" adds digits in front) -> Groundwire
+ *   2b. Any other number of 3 digits or fewer -> pass through untouched
  *   3. International (+ other than +1, or 011...) -> international line
  *   4. Anything that isn't a full 10-digit NANP number -> pass through untouched
  *   5. Per-contact overrides
@@ -29,6 +31,8 @@ public final class RouteEngine {
 
     public static final class Config {
         public final List<Pattern> groundwirePatterns = new ArrayList<>();
+        /** Digits to add in front of a match, same index as groundwirePatterns ("" = none). */
+        public final List<String> groundwirePrepends = new ArrayList<>();
         public final Set<String> gvAreaCodes = new HashSet<>();
         public final Set<String> cellAreaCodes = new HashSet<>();
         /** key = 10-digit number, value = CELL, GOOGLE_VOICE or HAMSHACK */
@@ -40,10 +44,11 @@ public final class RouteEngine {
 
         public Config groundwire(String patternsText) {
             groundwirePatterns.clear();
-            for (String line : patternsText.split("[\\r\\n,;]+")) {
-                String p = line.trim();
-                if (p.isEmpty() || p.startsWith("#")) continue;
-                groundwirePatterns.add(compileFreePbxPattern(p));
+            groundwirePrepends.clear();
+            for (String p : patternLines(patternsText)) {
+                String[] pp = splitPrepend(p);
+                groundwirePrepends.add(pp[0]);
+                groundwirePatterns.add(compileFreePbxPattern(pp[1]));
             }
             return this;
         }
@@ -82,7 +87,32 @@ public final class RouteEngine {
         }
     }
 
+    private static final Pattern PROTECTED = Pattern.compile("[2-9]11|988");
+
     private RouteEngine() {}
+
+    /** One pattern per line (or comma-separated); "#" starts a comment anywhere on a line. */
+    static List<String> patternLines(String text) {
+        List<String> out = new ArrayList<>();
+        for (String line : text.split("\\r?\\n")) {
+            int hash = line.indexOf('#');
+            if (hash >= 0) line = line.substring(0, hash);
+            for (String part : line.split("[,;]")) {
+                String p = part.trim();
+                if (!p.isEmpty()) out.add(p);
+            }
+        }
+        return out;
+    }
+
+    /** "05+NXX" -> {"05", "NXX"}; "NXX" -> {"", "NXX"}. */
+    static String[] splitPrepend(String p) {
+        int plus = p.indexOf('+');
+        if (plus < 0) return new String[]{"", p};
+        String pre = p.substring(0, plus).trim();
+        if (!pre.matches("[0-9]*")) throw new IllegalArgumentException("Prefix before + must be digits: " + p);
+        return new String[]{pre, p.substring(plus + 1).trim()};
+    }
 
     public static Decision route(String raw, Config c) {
         if (raw == null) raw = "";
@@ -102,16 +132,21 @@ public final class RouteEngine {
         }
         String d = sb.toString();
         if (d.isEmpty()) return new Decision(Line.PASSTHROUGH, s, "no digits");
-        if (!plus && d.length() <= 3) return new Decision(Line.PASSTHROUGH, s, "short/emergency code");
+        // N11 (211-911) and 988 are never routed or prefixed, whatever the patterns say.
+        if (!plus && PROTECTED.matcher(d).matches()) return new Decision(Line.PASSTHROUGH, s, "emergency/service code");
 
         // Groundwire patterns are matched against exactly what was dialed.
         if (!plus) {
-            for (Pattern p : c.groundwirePatterns) {
+            for (int i = 0; i < c.groundwirePatterns.size(); i++) {
+                Pattern p = c.groundwirePatterns.get(i);
                 if (p.matcher(d).matches()) {
-                    return new Decision(Line.GROUNDWIRE, d, "matches PBX pattern " + p.pattern());
+                    String pre = i < c.groundwirePrepends.size() ? c.groundwirePrepends.get(i) : "";
+                    return new Decision(Line.GROUNDWIRE, pre + d, "matches PBX pattern "
+                            + (pre.isEmpty() ? "" : pre + "+") + p.pattern());
                 }
             }
         }
+        if (!plus && d.length() <= 3) return new Decision(Line.PASSTHROUGH, s, "short code");
 
         // Normalize to 10-digit NANP.
         String ten = null;
@@ -156,6 +191,7 @@ public final class RouteEngine {
      * FreePBX/Asterisk dial pattern to regex:
      *   X = 0-9, Z = 1-9, N = 2-9, [..] = class, . = one or more, ! = zero or more,
      *   "prefix|match" = the bar is ignored for matching.
+     * (A leading "digits+" prepend is split off before this is called.)
      */
     public static Pattern compileFreePbxPattern(String pat) {
         StringBuilder re = new StringBuilder();
@@ -188,10 +224,8 @@ public final class RouteEngine {
 
     public static List<String> validatePatterns(String text) {
         List<String> errors = new ArrayList<>();
-        for (String line : text.split("[\\r\\n,;]+")) {
-            String p = line.trim();
-            if (p.isEmpty() || p.startsWith("#")) continue;
-            try { compileFreePbxPattern(p); } catch (RuntimeException e) { errors.add(e.getMessage()); }
+        for (String p : patternLines(text)) {
+            try { compileFreePbxPattern(splitPrepend(p)[1]); } catch (RuntimeException e) { errors.add(e.getMessage()); }
         }
         return Collections.unmodifiableList(errors);
     }

@@ -8,6 +8,10 @@ public final class Defaults {
     public static final String GROUNDWIRE_PATTERNS =
             "# AmateurWire (05 + extension)\n" +
             "05.\n" +
+            "# AmateurWire extensions dialed bare: 05 added automatically\n" +
+            "# (3-digit Poseidon, 5xxx Triton; 911/611/988 are always protected)\n" +
+            "05+NXX\n" +
+            "05+5XXX\n" +
             "# Mom & Dad's line (09 + number)\n" +
             "09.\n" +
             "# BulkVS hamshack line (9 + 10 digits)\n" +
