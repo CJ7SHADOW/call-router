@@ -76,10 +76,26 @@ public class RouterService extends CallRedirectionService {
         }
     }
 
+    /** Give the call a moment to start, then open the app that is carrying it (needs "Display over other apps"). */
+    private void bringToFront(String pkg) {
+        final android.content.Context app = getApplicationContext();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!android.provider.Settings.canDrawOverlays(app)) return;
+            android.content.Intent i = app.getPackageManager().getLaunchIntentForPackage(pkg);
+            if (i == null) return;
+            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            try { app.startActivity(i); } catch (RuntimeException e) { Log.w(TAG, "couldn't open " + pkg, e); }
+        }, 1200);
+    }
+
     private void respond(Action a) {
         switch (a.kind) {
             case REDIRECT:
                 redirectCall(a.uri, a.account, false);
+                if (new Prefs(this).showGroundwire()) {
+                    bringToFront(a.account.getComponentName().getPackageName());
+                }
                 break;
             case CANCEL:
                 cancelCall();

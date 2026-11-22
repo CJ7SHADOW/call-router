@@ -94,6 +94,12 @@ public class MainActivity extends Activity {
         dry.setOnCheckedChangeListener((CompoundButton b, boolean c) -> prefs.setDryRun(c));
         root.addView(dry);
 
+        Switch showGw = new Switch(this);
+        showGw.setText("Bring Groundwire to the front on its calls");
+        showGw.setChecked(prefs.showGroundwire());
+        showGw.setOnCheckedChangeListener((CompoundButton b, boolean c) -> prefs.setShowGroundwire(c));
+        root.addView(showGw);
+
         // ---- Tester
         header("Test a number");
         testEdit = edit("Number to test", false);

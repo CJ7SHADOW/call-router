@@ -28,6 +28,10 @@ public final class Prefs {
     public boolean dryRun() { return sp.getBoolean("dryRun", true); }
     public void setDryRun(boolean v) { sp.edit().putBoolean("dryRun", v).apply(); }
 
+    /** Open Groundwire's own screen after a call is handed to it. */
+    public boolean showGroundwire() { return sp.getBoolean("showGw", true); }
+    public void setShowGroundwire(boolean v) { sp.edit().putBoolean("showGw", v).apply(); }
+
     public String groundwirePatterns() { return sp.getString("gwPatterns", Defaults.GROUNDWIRE_PATTERNS); }
     public String gvAreaCodes() { return sp.getString("gvAreas", Defaults.GV_AREA_CODES); }
     public String cellAreaCodes() { return sp.getString("cellAreas", Defaults.CELL_AREA_CODES); }
