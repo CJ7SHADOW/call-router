@@ -95,7 +95,7 @@ public final class Prefs {
     // ---- Google Voice hand-off guard (stops GV's own outgoing call from being re-routed)
     public void markHandoff() { sp.edit().putLong("handoffAt", System.currentTimeMillis()).apply(); }
     public boolean inHandoffWindow() {
-        return System.currentTimeMillis() - sp.getLong("handoffAt", 0) < 60_000;
+        return System.currentTimeMillis() - sp.getLong("handoffAt", 0) < 15_000;
     }
     public void clearHandoff() { sp.edit().remove("handoffAt").apply(); }
 

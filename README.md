@@ -31,7 +31,7 @@ Default Groundwire patterns: `05.` AmateurWire, `09.` Mom & Dad's line, `9NXXNXX
 
 ## Google Voice hand-off
 
-The call is cancelled and its number is passed to the Google Voice app. For 60 seconds after a hand-off, the next outgoing call goes through unrouted, so Google Voice's own carrier call (if it makes one) isn't routed in a loop. The **Try Google Voice hand-off** button in the app shows which call link Google Voice accepts.
+The call is cancelled and its number is passed to the Google Voice app. For 15 seconds after a hand-off, the next outgoing call goes through unrouted, so Google Voice's own carrier call (if it makes one) isn't routed in a loop. The **Try Google Voice hand-off** button in the app shows which call link Google Voice accepts.
 
 Only one app can hold the call-routing role. Once Call Router holds it, turn off Google Voice's own "make calls with Voice" dialer integration so the two don't compete.
 
